@@ -1,26 +1,17 @@
 import React from 'react';
-import { Route, Routes } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom';
 import HomePage from './pages/homepage/homepage';
+import ShopPage from './components/shop/shop'
+import ErrorPage from './components/error-page/error-page';
 import './App.css';
-
-const HatsPage = () => {
-  return (
-    <div>
-      <h1>HATS PAGE</h1>
-    </div>
-  )
-}
-
-
 
 function App() {
   return (
-    <div>
-      <Routes>
-        <Route path='/' element={<HomePage />} />
-        <Route path='/shop/hats' element={<HatsPage />} />
-      </Routes>
-    </div>
+    <Routes>
+      <Route path='/' element={<HomePage />} />
+      <Route path='/shop' element={<ShopPage />} />
+      <Route path='*' element={<ErrorPage />} />
+    </Routes>
   );
 }
 
