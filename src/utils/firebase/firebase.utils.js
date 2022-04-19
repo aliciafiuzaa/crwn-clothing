@@ -1,8 +1,10 @@
 import { initializeApp } from 'firebase/app';
 import {
+  createUserWithEmailAndPassword,
   getAuth,
   signInWithPopup,
-  GoogleAuthProvider
+  signInWithRedirect,
+  GoogleAuthProvider,
 } from 'firebase/auth';
 import {
   getFirestore,
@@ -22,19 +24,21 @@ const firebaseConfig = {
 };
 
 const firebaseApp = initializeApp(firebaseConfig);
+// it's possible to have different providers, like facebook for example, that's why googleProvider is a class
+const googleProvider = new GoogleAuthProvider();
 
-const provider = new GoogleAuthProvider();
-
-provider.setCustomParameters({
+googleProvider.setCustomParameters({
   prompt: 'select_account'
 })
 
 export const auth = getAuth();
-export const signInWithGooglePopup = () => signInWithPopup(auth, provider);
+export const signInWithGooglePopup = () => signInWithPopup(auth, googleProvider);
+export const signInWithGoogleRedirect = () => signInWithRedirect(auth, googleProvider);
 
 export const db = getFirestore();
 
-export const createUserDocumentFromAuth = async (userAuth) => {
+export const createUserDocumentFromAuth = async (userAuth, additionalInformation = {}) => {
+  if (!userAuth) return;
   const userDocRef = doc(db, 'users', userAuth.uid);
 
   console.log(userDocRef);
@@ -43,7 +47,7 @@ export const createUserDocumentFromAuth = async (userAuth) => {
   console.log(userSnapshot.exists());
 
   // if user data does not exist
-  if(!userSnapshot.exists()) {
+  if (!userSnapshot.exists()) {
     const { displayName, email } = userAuth;
     // know when users are signing in
     const createdAt = new Date();
@@ -52,7 +56,8 @@ export const createUserDocumentFromAuth = async (userAuth) => {
       await setDoc(userDocRef, {
         displayName,
         email,
-        createdAt
+        createdAt,
+        ...additionalInformation
       });
     } catch (error) {
         console.log("There was an error creating the user", error.message);
@@ -62,4 +67,10 @@ export const createUserDocumentFromAuth = async (userAuth) => {
   // check if user data exists
   return userDocRef
 };
+
+export const createAuthUserWithEmailAndPassword = async (email, password) => {
+  // if I don't get an email or a password, I want to exit, I don't want to run this method
+  if (!email || !password) return;
+  return await createUserWithEmailAndPassword(auth, email, password);
+}
 
