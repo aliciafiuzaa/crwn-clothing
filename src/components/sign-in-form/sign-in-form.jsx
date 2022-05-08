@@ -1,18 +1,16 @@
 import { useState } from 'react';
 import FormInput from '../form-input/form-input';
-import { createAuthUserWithEmailAndPassword, createUserDocumentFromAuth } from '../../utils/firebase/firebase.utils';
+import { createUserDocumentFromAuth, signInAuthUserWithEmailAndPassword, signInWithGooglePopup } from '../../utils/firebase/firebase.utils';
 import Button from '../button/button';
-import './sign-up-form.scss';
+import './sign-in-form.scss';
 
 const defaultFormFields = {
-  displayName: '',
   email: '',
   password: '',
-  confirmPassword: ''
 }
-const SignUpForm = () => {
+const SignInForm = () => {
   const [formFields, setFormFields] = useState(defaultFormFields);
-  const { displayName, email, password, confirmPassword } = formFields;
+  const { email, password } = formFields;
 
   console.log(formFields);
 
@@ -20,25 +18,32 @@ const SignUpForm = () => {
     setFormFields(defaultFormFields);
   }
 
+  // async function
+  const signInWithGoogle = async () => {
+    const { user } = await signInWithGooglePopup();
+    const userDocRef = await createUserDocumentFromAuth(user);
+  }
+
   const handleSubmit = async (event) => {
-    // we don't want any default behaviouur in the form, all that's gonna happen inside the form we will handle it, just tell when the form is submitted
+    // we don't want any default behaviour in the form, all that's gonna happen inside the form we will handle it, just tell when the form is submitted
     event.preventDefault()
-    if (password !== confirmPassword) {
-      alert("Passwords do not match");
-      return;
-    }
 
     try {
-      const { user } = await createAuthUserWithEmailAndPassword(email, password);
-      console.log(user);
-      await createUserDocumentFromAuth(user, { displayName });
+      const response = await signInAuthUserWithEmailAndPassword(email, password);
+      console.log(response);
       resetFormFields();
     } catch (error) {
-      if (error.code == 'auth/email-already-in-use') {
-        alert('Cannot create user, email already in use')
-      } else {
-        console.log("user creation encountered an error", error);
+      switch(error.code) {
+        case 'auth/wrong-password':
+          alert('incorrect password for email');
+          break
+        case 'auth/user-not-found':
+          alert('user not found');
+          break
+        default:
+          console.log(error)
       }
+      console.log(error)
     }
 
     // confirm the password matches confirmPassword
@@ -53,25 +58,22 @@ const SignUpForm = () => {
     setFormFields({...formFields, [name]: value})
   };
   return (
-    <div className='sign-up-form-container'>
-      <h2>Don't have an account?</h2>
-      <span>Sign up with your email and password</span>
+    <div className='sign-in-form-container'>
+      <h2>Already have an account?</h2>
+      <span>Sign in with your email and password</span>
       {/* the onSubmit callback will only run when all the validations pass */}
       {/* the names must match up with the defaultFormFields values */}
       {/* the value must match up with the formFields, which will be what the user will type */}
       <form onSubmit={handleSubmit}>
-        <FormInput label='Display Name' type='text' required onChange={handleChange} name='displayName' value={displayName} />
-
         <FormInput label='Email' type='email' required onChange={handleChange} name='email' value={email} />
-
         <FormInput label='Password' type='password' required onChange={handleChange} name='password' value={password}/>
-
-        <FormInput label='Confirm Password' type='password' required onChange={handleChange}  name='confirmPassword' value={confirmPassword} />
-
-        <Button buttonType="inverted" type='submit'>Sign up</Button>
+        <div className='buttons-container'>
+          <Button type='submit'>Sign in</Button>
+          <Button buttonType='google' type='button' onClick={signInWithGoogle}>Google Sign in</Button>
+        </div>
       </form>
     </div>
   )
 }
 
-export default SignUpForm;
+export default SignInForm;
